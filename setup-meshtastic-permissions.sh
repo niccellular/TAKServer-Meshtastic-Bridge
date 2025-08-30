@@ -2,6 +2,7 @@
 
 # TAK Server Meshtastic Plugin - Serial Port Permission Setup Script
 # This script configures the necessary permissions for TAK Server to access Meshtastic devices
+# Version: 2.0 - Added protobuf support for ATAK message format
 # Run with: sudo bash setup-meshtastic-permissions.sh
 
 set -e
@@ -158,9 +159,10 @@ if [ -f /etc/debian_version ] && python3 -c "import sys; exit(0 if sys.version_i
     
     # Check if pipx is available (preferred method)
     if command -v pipx &> /dev/null; then
-        print_info "Installing meshtastic via pipx..."
+        print_info "Installing meshtastic and protobuf via pipx..."
         pipx install meshtastic --force
-        print_info "✓ Meshtastic installed via pipx"
+        pipx inject meshtastic protobuf
+        print_info "✓ Meshtastic and protobuf installed via pipx"
         
         # Create wrapper script for TAK Server to use
         cat > /usr/local/bin/meshtastic-wrapper << 'EOF'
@@ -172,11 +174,11 @@ EOF
         chmod 755 /usr/local/bin/meshtastic-wrapper
         
     # Try apt package first
-    elif apt-cache show python3-meshtastic &> /dev/null; then
-        print_info "Installing meshtastic via apt..."
+    elif apt-cache show python3-meshtastic &> /dev/null && apt-cache show python3-protobuf &> /dev/null; then
+        print_info "Installing meshtastic and protobuf via apt..."
         apt-get update -qq
-        apt-get install -y -qq python3-meshtastic
-        print_info "✓ Meshtastic installed via apt"
+        apt-get install -y -qq python3-meshtastic python3-protobuf
+        print_info "✓ Meshtastic and protobuf installed via apt"
         
     # Use pip with --break-system-packages as last resort
     else
@@ -189,26 +191,51 @@ EOF
         fi
         
         # Install with override flag
-        pip3 install --quiet --break-system-packages meshtastic
-        print_info "✓ Meshtastic Python library installed (with override)"
+        pip3 install --quiet --break-system-packages meshtastic protobuf
+        print_info "✓ Meshtastic and protobuf Python libraries installed (with override)"
         
         print_warn "Note: Using --break-system-packages is not recommended for production."
         echo "  Consider installing pipx instead:"
         echo "    sudo apt-get install pipx"
         echo "    pipx install meshtastic"
+        echo "    pipx inject meshtastic protobuf"
     fi
     
 # For older systems or non-Debian
 else
     if command -v pip3 &> /dev/null; then
-        print_info "Installing meshtastic Python library..."
-        pip3 install --quiet meshtastic
-        print_info "✓ Meshtastic Python library installed"
+        print_info "Installing meshtastic and protobuf Python libraries..."
+        pip3 install --quiet meshtastic protobuf
+        print_info "✓ Meshtastic and protobuf Python libraries installed"
     else
         print_warn "pip3 not found. Please install Python dependencies manually:"
         echo "  sudo apt-get install python3-pip"
-        echo "  pip3 install meshtastic"
+        echo "  pip3 install meshtastic protobuf"
     fi
+fi
+
+# Verify Python dependencies are installed
+print_info "Verifying Python dependencies..."
+DEPS_OK=true
+
+# Check for meshtastic
+if python3 -c "import meshtastic" 2>/dev/null; then
+    print_info "✓ meshtastic module found"
+else
+    print_error "meshtastic module not found"
+    DEPS_OK=false
+fi
+
+# Check for protobuf
+if python3 -c "from google.protobuf import message" 2>/dev/null; then
+    print_info "✓ protobuf module found"
+else
+    print_error "protobuf module not found"
+    DEPS_OK=false
+fi
+
+if [ "$DEPS_OK" = false ]; then
+    print_error "Some Python dependencies are missing. Please check the installation above."
 fi
 
 # Check if Python script is already deployed
