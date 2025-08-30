@@ -1,0 +1,21 @@
+# Meshtastic Interceptor Plugin Configuration
+# This plugin intercepts CoT messages with __meshtastic detail element
+# and sends them over the Meshtastic mesh network
+
+# Enable/disable the plugin
+enabled: true
+
+# Meshtastic interface type: serial, tcp, or ble
+interface: serial
+
+# Serial port (for serial interface) or BLE address (for BLE interface)
+port: /dev/ttyUSB0
+
+# TCP host (only used for TCP interface)
+host: localhost
+
+# Meshtastic channel to use (0-7)
+channel: 0
+
+# Log level for the plugin (DEBUG, INFO, WARN, ERROR)
+logLevel: INFO

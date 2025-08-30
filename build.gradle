@@ -1,0 +1,14 @@
+repositories {
+  mavenCentral()
+}
+
+apply plugin: 'com.github.johnrengelman.shadow'
+
+// support building a single jar that contains plugin code and also dependencies
+shadowJar { }
+
+dependencies {
+
+  implementation files('../lib/takserver-plugins-5.4-release-49.jar')
+
+}
